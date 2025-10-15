@@ -5,8 +5,8 @@ on:
     branches:
       - main
     paths:
-      - "genesyscloudtools/modules/**.js"
-      - "genesyscloudtools/launcher.js"
+      - "modules/**.js"
+      - "launcher.js"
 
 permissions:
   contents: write
@@ -22,34 +22,34 @@ jobs:
         id: gen
         run: |
           echo "Generating manifest.json ..."
-          BASE_URL="https://raw.githubusercontent.com/${{ github.repository }}/main/genesyscloudtools"
-          MODULE_DIR="genesyscloudtools/modules"
+          BASE_URL="https://raw.githubusercontent.com/${{ github.repository }}/main"
+          MODULE_DIR="modules"
 
           # Write header
-          echo '{' > genesyscloudtools/manifest.json
+          echo '{' > manifest.json
           echo '  "launcher": "'$BASE_URL'/launcher.js",' >> genesyscloudtools/manifest.json
-          echo '  "modules": [' >> genesyscloudtools/manifest.json
+          echo '  "modules": [' >> manifest.json
 
           FIRST=1
           for f in $(ls $MODULE_DIR/*.js 2>/dev/null); do
             FILE_URL="$BASE_URL/${f#genesyscloudtools/}"
             if [ $FIRST -eq 0 ]; then
-              echo ',' >> genesyscloudtools/manifest.json
+              echo ',' >> manifest.json
             fi
-            echo '    "'$FILE_URL'"' >> genesyscloudtools/manifest.json
+            echo '    "'$FILE_URL'"' >> manifest.json
             FIRST=0
           done
 
-          echo '  ]' >> genesyscloudtools/manifest.json
-          echo '}' >> genesyscloudtools/manifest.json
+          echo '  ]' >> manifest.json
+          echo '}' >> manifest.json
 
           echo "Generated manifest.json:"
-          cat genesyscloudtools/manifest.json
+          cat manifest.json
 
       - name: 💾 Commit updated manifest
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git add genesyscloudtools/manifest.json
+          git add manifest.json
           git commit -m "🤖 Auto-update manifest.json" || echo "No changes to commit"
           git push
