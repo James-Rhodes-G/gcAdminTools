@@ -8,7 +8,7 @@
 
 (function () {
   'use strict';
-
+//test for 
   async function buildLauncher() {
     const token = localStorage.getItem('gcucc-ui-auth-token')
       ? JSON.parse(localStorage.getItem('gcucc-ui-auth-token')).token
