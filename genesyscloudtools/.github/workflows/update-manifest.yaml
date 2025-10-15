@@ -1,0 +1,68 @@
+name: Auto Update Genesys Cloud Tools Manifest
+
+on:
+  push:
+    branches:
+      - '**'                         # run on pushes to any branch
+    paths:
+      - "genesyscloudtools/modules/**.js"
+      - "genesyscloudtools/launcher.js"
+      - ".github/workflows/update-manifest.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  update-manifest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🧱 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Generate manifest.json
+        id: generate
+        run: |
+          echo "🔧 Generating manifest.json ..."
+          BASE_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/genesyscloudtools"
+          MODULE_DIR="genesyscloudtools/modules"
+
+          mkdir -p genesyscloudtools
+          MANIFEST_FILE="genesyscloudtools/manifest.json"
+
+          echo '{' > $MANIFEST_FILE
+          echo '  "launcher": "'$BASE_URL'/launcher.js",' >> $MANIFEST_FILE
+          echo '  "modules": [' >> $MANIFEST_FILE
+
+          FIRST=1
+          for f in $(ls $MODULE_DIR/*.js 2>/dev/null || true); do
+            FILE_URL="$BASE_URL/${f#genesyscloudtools/}"
+            if [ $FIRST -eq 0 ]; then
+              echo ',' >> $MANIFEST_FILE
+            fi
+            echo '    "'$FILE_URL'"' >> $MANIFEST_FILE
+            FIRST=0
+          done
+
+          echo '  ]' >> $MANIFEST_FILE
+          echo '}' >> $MANIFEST_FILE
+
+          echo "✅ Generated manifest.json:"
+          cat $MANIFEST_FILE
+
+      - name: 💾 Commit and Push manifest.json
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+          git add genesyscloudtools/manifest.json
+
+          # Only commit if there are changes
+          if git diff --cached --quiet; then
+            echo "ℹ️ No changes to commit. Skipping push."
+          else
+            git commit -m "🤖 Auto-update manifest.json [skip ci]"
+            git push
+            echo "✅ manifest.json committed and pushed."
+          fi
+
