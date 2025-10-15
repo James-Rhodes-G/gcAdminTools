@@ -1,14 +1,17 @@
 // ==UserScript==
 // @name         GC Admin Helpers Library
 // @namespace    local.gc.tools
-// @version      1.0
-// @description  Shared UI, logging, and progress utilities for Genesys Cloud Admin Tools
+// @version      1.1
+// @description  Shared UI, logging, progress utilities, and global registry for Genesys Cloud Admin Tools
 // @grant        none
 // ==/UserScript==
 
 (function () {
   'use strict';
 
+  /* ──────────────────────────────
+     Basic Utilities
+  ────────────────────────────── */
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const nowISO = () => new Date().toISOString();
   const pad2 = n => String(n).padStart(2, '0');
@@ -28,7 +31,9 @@
     URL.revokeObjectURL(a.href);
   };
 
-  /** Create a consistent floating tool panel **/
+  /* ──────────────────────────────
+     Unified Panel UI
+  ────────────────────────────── */
   function createPanel(title, width = 360) {
     const p = document.createElement('div');
     Object.assign(p.style, {
@@ -55,7 +60,9 @@
     return p.querySelector('.panelContent');
   }
 
-  /** Create and update a progress bar **/
+  /* ──────────────────────────────
+     Progress Bar Component
+  ────────────────────────────── */
   function createProgress(container) {
     container.insertAdjacentHTML('beforeend', `
       <div style="height:20px;background:#333;border-radius:5px;overflow:hidden;margin-bottom:8px;">
@@ -74,14 +81,16 @@
     };
   }
 
-  /** Create a unified logger **/
+  /* ──────────────────────────────
+     Unified Logger
+  ────────────────────────────── */
   function createLogger(orgInfo, toolName, mode) {
     const orgShort = (orgInfo.thirdPartyOrgId || orgInfo.name || orgInfo.id).replace(/[^\w.-]+/g, '_');
     const stampStr = stamp();
     const base = `${orgShort}_${toolName}_${mode}_${stampStr}`;
     const logLines = [];
     const csvRows = [['TimestampISO', 'RunType', 'ItemName', 'ItemId', 'Result', 'Message']];
-    const add = (msg) => logLines.push(`[${nowISO()}] ${msg}`);
+    const add = msg => logLines.push(`[${nowISO()}] ${msg}`);
     const addCSV = (name, id, res, msg) => csvRows.push([nowISO(), mode.toUpperCase(), name, id, res, msg]);
     const save = (summary = []) => {
       summary.forEach(s => logLines.push(s));
@@ -92,6 +101,18 @@
     return { add, addCSV, save, logLines, csvRows, base };
   }
 
+  /* ──────────────────────────────
+     Global Tool Registry
+  ────────────────────────────── */
+  window.registeredGcTools = window.registeredGcTools || [];
+  window.registerGcTool = function (tool) {
+    window.registeredGcTools.push(tool);
+    console.log(`🧩 Registered GC Tool: ${tool.name}`);
+  };
+
+  /* ──────────────────────────────
+     Export Helpers
+  ────────────────────────────── */
   window.GCHelpers = {
     sleep,
     nowISO,
@@ -102,5 +123,5 @@
     dl
   };
 
-  console.log('%c[GC Helpers Library Loaded]', 'color: limegreen; font-weight:bold;');
+  console.log('%c[GC Helpers v1.1 Loaded — UI, Logger, Registry Ready]', 'color: limegreen; font-weight:bold;');
 })();
