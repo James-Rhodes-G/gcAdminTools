@@ -1,4 +1,4 @@
-name: Auto Update Genesys Cloud Tools Manifest
+name: Old -- Auto Update Genesys Cloud Tools Manifest
 
 on:
   push:
@@ -53,3 +53,4 @@ jobs:
           git add manifest.json
           git commit -m "🤖 Auto-update manifest.json" || echo "No changes to commit"
           git push
+
