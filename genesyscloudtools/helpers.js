@@ -1,107 +1,106 @@
 // ==UserScript==
-// @name         GC Tool: Phone Site Migrator (Helpers)
+// @name         GC Admin Helpers Library
 // @namespace    local.gc.tools
-// @version      5.0
-// @description  Migrate all phones from one site to another using shared helpers
+// @version      1.0
+// @description  Shared UI, logging, and progress utilities for Genesys Cloud Admin Tools
 // @grant        none
 // ==/UserScript==
 
 (function () {
   'use strict';
 
-  async function run({ token, apiBase, orgInfo }) {
-    const { createPanel, createProgress, createLogger, sleep } = window.GCHelpers;
-    const content = createPanel('📞 Phone Site Migrator');
-    content.innerHTML = `
-      <label>Old Site:</label>
-      <select id="src"></select>
-      <label>New Site:</label>
-      <select id="tgt"></select>
-      <div style="margin:6px 0;"><label><input type="checkbox" id="dry" checked> Dry Run (Preview Only)</label></div>
-      <button id="go" style="width:100%;padding:8px;background:#0078d4;color:#fff;border:none;border-radius:5px;cursor:pointer;">Migrate Phones</button>
-    `;
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const nowISO = () => new Date().toISOString();
+  const pad2 = n => String(n).padStart(2, '0');
+  const stamp = () => {
+    const d = new Date();
+    return `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}_${pad2(d.getHours())}${pad2(d.getMinutes())}`;
+  };
 
-    const bar = createProgress(content);
-    const dry = content.querySelector('#dry');
-    const src = content.querySelector('#src');
-    const tgt = content.querySelector('#tgt');
+  const dl = (name, text, type = 'text/plain') => {
+    const blob = new Blob([text], { type: type + ';charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(a.href);
+  };
 
-    async function fetchSites() {
-      let sites = [], page = 1;
-      while (true) {
-        const r = await fetch(`${apiBase}/api/v2/telephony/providers/edges/sites?pageSize=200&pageNumber=${page}`, { headers: { Authorization: `Bearer ${token}` }});
-        const d = await r.json();
-        if (d.entities?.length) sites = sites.concat(d.entities);
-        if (!d.nextUri) break;
-        page++;
-        await sleep(200);
-      }
-      return sites;
-    }
-
-    async function getPhones(siteId) {
-      let list = [], p = 1;
-      while (true) {
-        const r = await fetch(`${apiBase}/api/v2/telephony/providers/edges/phones?pageSize=200&pageNumber=${p}`, { headers: { Authorization: `Bearer ${token}` }});
-        const d = await r.json();
-        const f = d.entities?.filter(ph => ph.site && ph.site.id === siteId) || [];
-        list = list.concat(f);
-        if (!d.nextUri) break;
-        p++;
-      }
-      return list;
-    }
-
-    const sites = await fetchSites();
-    sites.forEach(s => {
-      src.add(new Option(s.name, s.id));
-      tgt.add(new Option(s.name, s.id));
+  /** Create a consistent floating tool panel **/
+  function createPanel(title, width = 360) {
+    const p = document.createElement('div');
+    Object.assign(p.style, {
+      position: 'fixed',
+      bottom: '20px',
+      right: '20px',
+      background: '#1f1f1f',
+      color: '#fff',
+      padding: '15px',
+      borderRadius: '10px',
+      boxShadow: '0 0 10px rgba(0,0,0,0.4)',
+      zIndex: '2147483647',
+      fontFamily: 'sans-serif',
+      width: `${width}px`
     });
+    p.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+        <h4 style="margin:0;">${title}</h4>
+        <button class="closeBtn" style="background:none;border:none;color:#fff;font-size:16px;cursor:pointer;">✖</button>
+      </div>
+      <div class="panelContent"></div>`;
+    document.body.appendChild(p);
+    p.querySelector('.closeBtn').onclick = () => p.remove();
+    return p.querySelector('.panelContent');
+  }
 
-    content.querySelector('#go').onclick = async () => {
-      const source = src.value, target = tgt.value, isDry = dry.checked;
-      if (source === target) return alert('Source and target must differ.');
-      const confirmMsg = isDry ? `Preview migration from "${src.selectedOptions[0].text}" → "${tgt.selectedOptions[0].text}"?`
-                               : `⚠️ Live migration from "${src.selectedOptions[0].text}" → "${tgt.selectedOptions[0].text}"?`;
-      if (!confirm(confirmMsg)) return;
-
-      const logger = createLogger(orgInfo, 'phoneMigration', isDry ? 'dryrun' : 'live');
-      const phones = await getPhones(source);
-      const total = phones.length;
-      let ok = 0, fail = 0, done = 0;
-      bar.update(done, total);
-      for (const ph of phones) {
-        if (isDry) {
-          const msg = `Would migrate ${ph.name}`;
-          logger.add(msg); logger.addCSV(ph.name, ph.id, 'DRY_RUN', msg);
-          console.log(`🧪 ${msg}`);
-        } else {
-          try {
-            const full = await fetch(`${apiBase}/api/v2/telephony/providers/edges/phones/${ph.id}`, { headers: { Authorization: `Bearer ${token}` }}).then(r=>r.json());
-            full.site = { id: target };
-            delete full.properties; delete full.edge;
-            const put = await fetch(`${apiBase}/api/v2/telephony/providers/edges/phones/${ph.id}`, {
-              method: 'PUT',
-              headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify(full)
-            });
-            if (put.ok) { ok++; logger.add(`✅ ${ph.name}`); logger.addCSV(ph.name, ph.id, 'SUCCESS', 'Migrated'); }
-            else { fail++; const e = await put.text(); logger.add(`❌ ${ph.name}: ${e}`); logger.addCSV(ph.name, ph.id, 'FAIL', e); }
-          } catch (e) {
-            fail++; logger.add(`❌ ${ph.name}: ${e.message}`); logger.addCSV(ph.name, ph.id, 'FAIL', e.message);
-          }
-        }
-        done++; bar.update(done, total); await sleep(300);
+  /** Create and update a progress bar **/
+  function createProgress(container) {
+    container.insertAdjacentHTML('beforeend', `
+      <div style="height:20px;background:#333;border-radius:5px;overflow:hidden;margin-bottom:8px;">
+        <div class="bar" style="height:100%;width:0%;background:#00c853;transition:width 0.3s;"></div>
+      </div>
+      <div class="label" style="text-align:center;font-size:13px;margin-bottom:10px;">0/0 (0%)</div>
+    `);
+    const bar = container.querySelector('.bar');
+    const label = container.querySelector('.label');
+    return {
+      update(done, total) {
+        const pct = total ? Math.round((done / total) * 100) : 0;
+        bar.style.width = pct + '%';
+        label.textContent = `${done}/${total} (${pct}%)`;
       }
-      logger.add(`Summary: success=${ok}, fail=${fail}`);
-      logger.save();
-      alert(`Migration complete.\nSuccess: ${ok}\nFail: ${fail}`);
     };
   }
 
-  registerGcTool({
-    name: "Phone Site Migrator",
-    version: "5.0",
-    run
-  });
+  /** Create a unified logger **/
+  function createLogger(orgInfo, toolName, mode) {
+    const orgShort = (orgInfo.thirdPartyOrgId || orgInfo.name || orgInfo.id).replace(/[^\w.-]+/g, '_');
+    const stampStr = stamp();
+    const base = `${orgShort}_${toolName}_${mode}_${stampStr}`;
+    const logLines = [];
+    const csvRows = [['TimestampISO', 'RunType', 'ItemName', 'ItemId', 'Result', 'Message']];
+    const add = (msg) => logLines.push(`[${nowISO()}] ${msg}`);
+    const addCSV = (name, id, res, msg) => csvRows.push([nowISO(), mode.toUpperCase(), name, id, res, msg]);
+    const save = (summary = []) => {
+      summary.forEach(s => logLines.push(s));
+      logLines.push('=== END ===');
+      dl(`${base}.log`, logLines.join('\n'));
+      dl(`${base}.csv`, csvRows.map(r => r.join(',')).join('\n'), 'text/csv');
+    };
+    return { add, addCSV, save, logLines, csvRows, base };
+  }
+
+  window.GCHelpers = {
+    sleep,
+    nowISO,
+    stamp,
+    createPanel,
+    createProgress,
+    createLogger,
+    dl
+  };
+
+  console.log('%c[GC Helpers Library Loaded]', 'color: limegreen; font-weight:bold;');
 })();
