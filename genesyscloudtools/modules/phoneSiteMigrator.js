@@ -10,6 +10,8 @@
   'use strict';
 
   async function run({ token, apiBase, orgInfo }) {
+	// ✅ Ensure Genesys Cloud's DOM is visible before building UI
+	await window.GCHelpers.waitForBody();
     const { createPanel, createProgress, createLogger, sleep } = window.GCHelpers;
     const content = createPanel('📞 Phone Site Migrator');
     content.innerHTML = `
