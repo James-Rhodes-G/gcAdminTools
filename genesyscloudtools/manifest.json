@@ -1,4 +1,7 @@
 {
+  "helpers": [
+    "https://raw.githubusercontent.com/James-Rhodes-G/gcAdminTools/main/genesyscloudtools/helpers.js"
+  ],
   "launcher": "https://raw.githubusercontent.com/James-Rhodes-G/gcAdminTools/main/genesyscloudtools/launcher.js",
   "modules": [
     "https://raw.githubusercontent.com/James-Rhodes-G/gcAdminTools/main/genesyscloudtools/modules/phoneSiteMigrator.js"
