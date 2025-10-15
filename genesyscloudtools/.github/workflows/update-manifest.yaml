@@ -3,11 +3,13 @@ name: Auto Update Genesys Cloud Tools Manifest
 on:
   push:
     branches:
-      - '**'                         # run on pushes to any branch
+      - '**'                         # run automatically on any branch
     paths:
       - "genesyscloudtools/modules/**.js"
       - "genesyscloudtools/launcher.js"
       - ".github/workflows/update-manifest.yml"
+
+  workflow_dispatch:                 # ✅ Manual trigger from Actions tab
 
 permissions:
   contents: write
