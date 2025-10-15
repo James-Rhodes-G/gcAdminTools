@@ -3,6 +3,10 @@
 // @namespace    local.gc.tools
 // @version      3.2
 // @description  Bootstrap Genesys Cloud Admin tools dynamically from Git (auto-updates launcher + modules, supports local override and local badge indicator)
+// @author       James
+// @match        https://*.mypurecloud.com/*
+// @match        https://*.pure.cloud/*
+// @match        https://*.us-gov-pure.cloud/*
 // @grant        none
 // ==/UserScript==
 
