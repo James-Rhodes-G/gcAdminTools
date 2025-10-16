@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Genesys Cloud Admin Core (Git Loader + Registry + SPA Safe)
+// @name         Genesys Cloud Admin Core (Git Loader + Registry + SPA Safe + Hotkey)
 // @namespace    local.gc.tools
-// @version      3.5
-// @description  Loads Genesys Cloud Admin tools dynamically from GitHub with registry, cache, and UI persistence across SPA navigation
+// @version      3.6
+// @description  Loads Genesys Cloud Admin tools dynamically from GitHub with registry, cache, SPA navigation recovery, and Alt+L launcher hotkey
 // @grant        none
 // @run-at       document-end
 // @match        https://*.mypurecloud.com/*
@@ -39,8 +39,12 @@
   }
 
   function injectScript(code, name) {
-    try { new Function(code)(); console.log(`📦 Executed ${name} (CSP-safe)`); }
-    catch (e) { console.error(`❌ Failed to execute ${name}:`, e); }
+    try {
+      new Function(code)(); // CSP-safe execution
+      console.log(`📦 Executed ${name}`);
+    } catch (e) {
+      console.error(`❌ Failed to execute ${name}:`, e);
+    }
   }
 
   function saveCache(k, v) { try { localStorage.setItem(CACHE_PREFIX + k, v); } catch {} }
@@ -95,7 +99,7 @@
     // launcher next
     await loadFile("launcher", manifest.launcher);
 
-    // then modules
+    // modules last
     for (const url of manifest.modules || []) {
       const n = url.split("/").pop();
       await loadFile(n, url);
@@ -140,6 +144,14 @@
     console.error("❌ Failed to load Genesys Cloud tools:", e);
     alert("Genesys Cloud Admin loader failed.\nSee console for details.");
   }
+
+  /* ─────────── Hotkey to reopen launcher ─────────── */
+  document.addEventListener('keydown', e => {
+    if (e.altKey && e.key.toLowerCase() === 'l') {
+      console.log('⚙️ Alt+L pressed — rebuilding launcher');
+      if (typeof window.buildLauncher === 'function') window.buildLauncher();
+    }
+  });
 
   /* ─────────── Developer Utilities ─────────── */
   window.gcAdminTools = {
