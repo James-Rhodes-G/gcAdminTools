@@ -17,6 +17,7 @@
     content.innerHTML = `
       <label>Old Site:</label>
       <select id="src"></select>
+	  <p>
       <label>New Site:</label>
       <select id="tgt"></select>
       <div style="margin:6px 0;"><label><input type="checkbox" id="dry" checked> Dry Run (Preview Only)</label></div>

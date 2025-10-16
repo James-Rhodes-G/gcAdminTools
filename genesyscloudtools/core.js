@@ -145,13 +145,25 @@
     alert("Genesys Cloud Admin loader failed.\nSee console for details.");
   }
 
-  /* ─────────── Hotkey to reopen launcher ─────────── */
-  document.addEventListener('keydown', e => {
-    if (e.altKey && e.key.toLowerCase() === 'l') {
-      console.log('⚙️ Alt+L pressed — rebuilding launcher');
-      if (typeof window.buildLauncher === 'function') window.buildLauncher();
+/* ─────────── Hotkey to reopen launcher (cross-platform) ─────────── */
+document.addEventListener('keydown', e => {
+  const key = e.key.toLowerCase();
+  const isMac = navigator.platform.toUpperCase().includes('MAC');
+
+  // Use ⌘ + Shift + L on mac (to avoid browser focus)
+  const macTrigger = isMac && e.metaKey && e.shiftKey && key === 'l';
+  const winTrigger = !isMac && e.altKey && key === 'l';
+
+  if (macTrigger || winTrigger) {
+    e.preventDefault(); // stop browser from hijacking the shortcut
+    console.log('⚙️ Keyboard shortcut pressed — rebuilding launcher');
+    if (typeof window.buildLauncher === 'function') {
+      window.buildLauncher();
+    } else {
+      console.warn('❌ window.buildLauncher() not found.');
     }
-  });
+  }
+});
 
   /* ─────────── Developer Utilities ─────────── */
   window.gcAdminTools = {

@@ -62,7 +62,7 @@
       // Build the inner launcher content
       content.innerHTML = `
         <div style="font-size:12px;margin-bottom:8px;color:#ccc;">
-          Org: <strong>${orgInfo.thirdPartyOrgId || orgInfo.name || orgInfo.id}</strong>
+          Org: <strong>${orgInfo.thirdPartyOrgName || orgInfo.name || orgInfo.id}</strong>
         </div>
         <label>Select a Tool:</label>
         <select id="toolSelect" style="width:100%;margin-bottom:10px;background:#2c2c2c;color:#fff;border:1px solid #555;border-radius:5px;padding:6px;"></select>
