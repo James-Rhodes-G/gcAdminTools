@@ -48,7 +48,7 @@
           console.log(`🧪 ${msg}`);
         } else {
           try {
-            const r = await fetch(`${apiBase}/api/v2/routing/conversations/${id}`, {
+            const r = await GCHelpers.safeApiFetch(`${apiBase}/api/v2/routing/conversations/${id}`, {
               method: 'PATCH',
               headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
               body: JSON.stringify({ priority: pri })
@@ -66,6 +66,9 @@
       logger.save();
       alert(`Priority update complete.\nSuccess: ${ok}\nFail: ${fail}`);
     };
+	
+    //Add a Return to Launcher button (bottom of panel)
+    addReturnButton(content);
   }
 
   registerGcTool({

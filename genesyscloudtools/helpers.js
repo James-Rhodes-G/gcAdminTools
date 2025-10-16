@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         GC Admin Helpers Library
 // @namespace    local.gc.tools
-// @version      1.2
-// @description  Shared UI, logging, progress utilities, and registry for Genesys Cloud Admin Tools
+// @version      1.4
+// @description  Shared UI, logging, progress, registry, minimize, return, and rate-limit safe API calls
 // @grant        none
 // ==/UserScript==
 
@@ -40,15 +40,15 @@
     return false;
   }
 
-  /* ─────────── Unified Panel UI ─────────── */
+  /* ─────────── Unified Panel UI (with minimize/dock) ─────────── */
   function createPanel(title, width = 360) {
     const p = document.createElement('div');
     Object.assign(p.style, {
       position: 'fixed',
       bottom: '20px',
       right: '20px',
-		background: '#202020',
-		color: '#e6e6e6',
+      background: '#1f1f1f',
+      color: '#f2f2f2',
       padding: '15px',
       borderRadius: '10px',
       boxShadow: '0 0 10px rgba(0,0,0,0.4)',
@@ -59,12 +59,46 @@
     p.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
         <h4 style="margin:0;">${title}</h4>
-        <button class="closeBtn" style="background:none;border:none;color:#fff;font-size:16px;cursor:pointer;">✖</button>
+        <div>
+          <button class="minBtn" title="Minimize" style="background:none;border:none;color:#fff;font-size:14px;cursor:pointer;margin-right:5px;">_</button>
+          <button class="closeBtn" title="Close" style="background:none;border:none;color:#fff;font-size:16px;cursor:pointer;">✖</button>
+        </div>
       </div>
       <div class="panelContent"></div>`;
-    // ✅ Attach to <html> instead of <body> (avoids React shadow DOM clipping)
     (document.documentElement || document.body).appendChild(p);
-    p.querySelector('.closeBtn').onclick = () => p.remove();
+
+    // Dock (minimized state)
+    const dock = document.createElement('div');
+    dock.textContent = '⚙️';
+    Object.assign(dock.style, {
+      position: 'fixed',
+      bottom: '15px',
+      right: '15px',
+      background: '#0078d4',
+      color: '#fff',
+      borderRadius: '50%',
+      width: '36px',
+      height: '36px',
+      display: 'none',
+      justifyContent: 'center',
+      alignItems: 'center',
+      cursor: 'pointer',
+      fontSize: '20px',
+      boxShadow: '0 0 6px rgba(0,0,0,0.5)',
+      zIndex: '2147483647'
+    });
+    document.body.appendChild(dock);
+    dock.onclick = () => { dock.style.display = 'none'; p.style.display = 'block'; };
+
+    p.querySelector('.minBtn').onclick = () => {
+      p.style.display = 'none';
+      dock.style.display = 'flex';
+    };
+    p.querySelector('.closeBtn').onclick = () => {
+      p.remove();
+      dock.remove();
+    };
+
     return p.querySelector('.panelContent');
   }
 
@@ -105,14 +139,49 @@
     return { add, addCSV, save, logLines, csvRows, base };
   }
 
-  /* ─────────── Global Registry ─────────── */
+  /* ─────────── Return to Launcher Button ─────────── */
+  function addReturnButton(container) {
+    const btn = document.createElement('button');
+    btn.textContent = '⬅️ Return to Launcher';
+    Object.assign(btn.style, {
+      width: '100%',
+      padding: '8px',
+      background: '#0078d4',
+      color: '#fff',
+      border: 'none',
+      borderRadius: '5px',
+      cursor: 'pointer',
+      marginTop: '10px'
+    });
+    btn.onclick = () => {
+      if (typeof window.buildLauncher === 'function') window.buildLauncher();
+      container.closest('div[style*="position: fixed"]').remove();
+    };
+    container.appendChild(btn);
+  }
+
+  /* ─────────── Rate-Limit Safe Fetch ─────────── */
+  async function safeApiFetch(url, options = {}, maxRetries = 5) {
+    let attempt = 0;
+    while (true) {
+      const resp = await fetch(url, options);
+      if (resp.status !== 429 || attempt >= maxRetries) return resp;
+
+      const retryAfter = parseInt(resp.headers.get('Retry-After')) || Math.pow(2, attempt) * 1000;
+      console.warn(`⏳ Rate limited (429). Retrying in ${retryAfter} ms...`);
+      await sleep(retryAfter);
+      attempt++;
+    }
+  }
+
+  /* ─────────── Registry ─────────── */
   window.registeredGcTools = window.registeredGcTools || [];
-  window.registerGcTool = function (tool) {
+  window.registerGcTool = tool => {
     window.registeredGcTools.push(tool);
     console.log(`🧩 Registered GC Tool: ${tool.name}`);
   };
 
-  /* ─────────── Expose Helpers ─────────── */
+  /* ─────────── Exports ─────────── */
   window.GCHelpers = {
     sleep,
     nowISO,
@@ -121,8 +190,10 @@
     createProgress,
     createLogger,
     dl,
-    waitForBody
+    waitForBody,
+    addReturnButton,
+    safeApiFetch  // 🆕 added global rate-limit aware fetch
   };
 
-  console.log('%c[GC Helpers v1.2 Loaded — UI, Logger, waitForBody, Registry Ready]', 'color: limegreen; font-weight:bold;');
+  console.log('%c[GC Helpers v1.4 Loaded — minimize, return, and rate-limit handling ready]', 'color: limegreen; font-weight:bold;');
 })();

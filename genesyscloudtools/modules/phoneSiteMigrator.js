@@ -32,7 +32,7 @@
     async function fetchSites() {
       let sites = [], page = 1;
       while (true) {
-        const r = await fetch(`${apiBase}/api/v2/telephony/providers/edges/sites?pageSize=200&pageNumber=${page}`, { headers: { Authorization: `Bearer ${token}` }});
+        const r = await GCHelpers.safeApiFetch(`${apiBase}/api/v2/telephony/providers/edges/sites?pageSize=200&pageNumber=${page}`, { headers: { Authorization: `Bearer ${token}` }});
         const d = await r.json();
         if (d.entities?.length) sites = sites.concat(d.entities);
         if (!d.nextUri) break;
@@ -45,7 +45,7 @@
     async function getPhones(siteId) {
       let list = [], p = 1;
       while (true) {
-        const r = await fetch(`${apiBase}/api/v2/telephony/providers/edges/phones?pageSize=200&pageNumber=${p}`, { headers: { Authorization: `Bearer ${token}` }});
+        const r = await GCHelpers.safeApiFetch(`${apiBase}/api/v2/telephony/providers/edges/phones?pageSize=200&pageNumber=${p}`, { headers: { Authorization: `Bearer ${token}` }});
         const d = await r.json();
         const f = d.entities?.filter(ph => ph.site && ph.site.id === siteId) || [];
         list = list.concat(f);
@@ -80,10 +80,10 @@
           console.log(`🧪 ${msg}`);
         } else {
           try {
-            const full = await fetch(`${apiBase}/api/v2/telephony/providers/edges/phones/${ph.id}`, { headers: { Authorization: `Bearer ${token}` }}).then(r=>r.json());
+            const full = await GCHelpers.safeApiFetch(`${apiBase}/api/v2/telephony/providers/edges/phones/${ph.id}`, { headers: { Authorization: `Bearer ${token}` }}).then(r=>r.json());
             full.site = { id: target };
             delete full.properties; delete full.edge;
-            const put = await fetch(`${apiBase}/api/v2/telephony/providers/edges/phones/${ph.id}`, {
+            const put = await GCHelpers.safeApiFetch(`${apiBase}/api/v2/telephony/providers/edges/phones/${ph.id}`, {
               method: 'PUT',
               headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
               body: JSON.stringify(full)
@@ -100,6 +100,9 @@
       logger.save();
       alert(`Migration complete.\nSuccess: ${ok}\nFail: ${fail}`);
     };
+	
+    //Add a Return to Launcher button (bottom of panel)
+    addReturnButton(content);
   }
 
   registerGcTool({
