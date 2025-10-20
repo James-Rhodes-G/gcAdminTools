@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GC Admin Helpers Library
 // @namespace    local.gc.tools
-// @version      1.4
+// @version      1.5
 // @description  Shared UI, logging, progress, registry, minimize, return, and rate-limit safe API calls
 // @grant        none
 // ==/UserScript==
@@ -41,7 +41,7 @@
   }
 
   /* ─────────── Unified Panel UI (with minimize/dock) ─────────── */
-  function createPanel(title, width = 360) {
+  function createPanel(title, width = 360, startMinimized = false) {
     const p = document.createElement('div');
     Object.assign(p.style, {
       position: 'fixed',
@@ -98,6 +98,12 @@
       p.remove();
       dock.remove();
     };
+
+      //start minimized
+    if (startMinimized) {
+      p.style.display = "none";
+      dock.style.display = "flex";
+    }
 
     return p.querySelector('.panelContent');
   }

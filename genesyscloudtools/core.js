@@ -8,14 +8,42 @@
 // @match        https://*.mypurecloud.com/*
 // @match        https://*.pure.cloud/*
 // @match        https://*.us-gov-pure.cloud/*
+// @Author       James Rhodes
 // ==/UserScript==
+
 
 (async function () {
   'use strict';
+  /* ─────────── Prevent running inside iframes ─────────── */
+  if (window.top !== window.self) {
+    console.log('🧱 GC Admin Tools: skipping iframe context');
+    return;
+  };
+// Toggle between environments
+// true  = load everything from local Apache (for development)
+// false = load from GitHub (for production)
+const DEV_MODE = true;   //flip this to true when testing locally
 
-  const REPO_BASE =
-    "https://raw.githubusercontent.com/James-Rhodes-G/gcAdminTools/main/genesyscloudtools";
-  const MANIFEST_URL = `${REPO_BASE}/manifest.json`;
+// Local base path (served by Apache on macOS)
+const LOCAL_BASE = "http://localhost/~jarhodes/TamperMonkey/genesyscloudtools";
+
+// Production GitHub path
+const PROD_BASE = "https://raw.githubusercontent.com/James-Rhodes-G/gcAdminTools/main/genesyscloudtools";
+
+// Automatically choose base URL
+const REPO_BASE = DEV_MODE ? LOCAL_BASE : PROD_BASE;
+
+// Build manifest URL
+const MANIFEST_URL = `${REPO_BASE}/manifest.json`;
+
+// Local debug info
+console.log(`🌐 Environment: ${DEV_MODE ? "LOCAL DEV" : "GITHUB PROD"}`);
+console.log(`📁 Manifest URL: ${MANIFEST_URL}`);
+
+
+  // const REPO_BASE =
+  //   "https://raw.githubusercontent.com/James-Rhodes-G/gcAdminTools/main/genesyscloudtools";
+  // const MANIFEST_URL = `${REPO_BASE}/manifest.json`;
   const CACHE_PREFIX = "gc_tools_cache_";
   const LOCAL_OVERRIDE_KEY = "gcLocalOverrides";
 

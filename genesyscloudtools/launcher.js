@@ -29,7 +29,7 @@
     const { createPanel } = window.GCHelpers || {};
     let content;
     if (typeof createPanel === 'function') {
-      content = createPanel('⚙️ Genesys Cloud Admin Tools');
+      content = createPanel('⚙️ Genesys Cloud Admin Tools', 360, true);
       content.parentElement.id = 'gcLauncherPanel';
     } else {
       // fallback if helpers.js fails to load
