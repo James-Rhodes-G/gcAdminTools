@@ -1,0 +1,29 @@
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+# IDE and Editor Files
+.vscode/        # VSCode settings directory
+.idea/          # IntelliJ IDE settings directory
+*.sublime-workspace
+*.suo
+*.user
+*.userossc
+*.sln.docstates
+
+# Build and Compilation Files
+/build/
+/dist/
+/target/
+*.log
+*.tmp
+*.bak
+*.swp
+
+# Dependency and Package Manager Directories
+/node_modules/  # For JavaScript projects
+/vendor/        # Common for many languages (e.g., PHP)
+/lib/           # Often contains compiled or auto-generated libraries
+
+# Environment and Configuration Files
+manifest.json
