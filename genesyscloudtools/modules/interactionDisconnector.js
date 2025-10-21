@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         GC Tool: Interaction Disconnector (Native Selection – Phase 1)
+// @name         GC Tool: Interaction Disconnector (Native – Disconnect Enabled)
 // @namespace    local.gc.tools
-// @version      5.0
-// @description  Detect selected interactions in Genesys Cloud Interactions pane, count & log (no deletes yet)
+// @version      6.0
+// @description  Disconnect selected Genesys Cloud interactions using native checkboxes (safeApiFetch, Dry Run, logging, progress, minimize, return)
 // @grant        none
 // ==/UserScript==
 
@@ -11,65 +11,97 @@
 
   async function run({ token, apiBase, orgInfo }) {
     await window.GCHelpers.waitForBody();
-
     const { createPanel, createProgress, createLogger, sleep, addReturnButton, safeApiFetch } = window.GCHelpers;
 
-    const content = createPanel('🔍 Interaction Disconnector (Native Selection – Phase 1)');
+    const content = createPanel('📞 Interaction Disconnector (Disconnect Enabled)');
 
     content.innerHTML = `
       <p style="font-size:13px;color:#ddd;margin-bottom:6px;">
         Select interactions using the <strong>native Genesys Cloud checkboxes</strong> in the Interactions pane,
-        then click <em>"Scan Selections"</em> below.
+        then click <em>"Disconnect Selected"</em> below.
       </p>
 
       <div style="margin-bottom:8px;">
         <label><input type="checkbox" id="dryRun" checked> Dry Run (Preview Only)</label>
       </div>
 
-      <button id="scanBtn" style="width:100%;padding:8px;background:#0078d4;color:#fff;border:none;border-radius:5px;cursor:pointer;margin-bottom:8px;">
-        🔄 Scan Selections
+      <button id="disconnectBtn" style="width:100%;padding:8px;background:#d32f2f;color:#fff;border:none;border-radius:5px;cursor:pointer;margin-bottom:8px;">
+        🔌 Disconnect Selected
       </button>
 
-      <div id="scanResults" style="font-size:13px;color:#ccc;margin-bottom:10px;">Awaiting scan...</div>
+      <div id="scanResults" style="font-size:13px;color:#ccc;margin-bottom:10px;">Awaiting action…</div>
     `;
 
     const bar = createProgress(content);
     const dryRunBox = content.querySelector('#dryRun');
-    const scanBtn = content.querySelector('#scanBtn');
+    const disconnectBtn = content.querySelector('#disconnectBtn');
     const scanResults = content.querySelector('#scanResults');
 
-    // --- utility: detect selected checkboxes in Interactions pane ---
-    function detectSelectedInteractions() {
-      // attempt multiple selector patterns (Genesys may change class names)
-      const selectors = [
-        'input[type="checkbox"][data-testid*="interaction"]',
-        'input[type="checkbox"][aria-label*="Interaction"]',
-        'input[type="checkbox"]'
-      ];
-      let selected = [];
-      for (const sel of selectors) {
-        const boxes = Array.from(document.querySelectorAll(sel));
-        const checked = boxes.filter(b => b.checked);
-        if (checked.length) {
-          selected = checked.map(b => b.closest('[data-id], [id]')?.getAttribute('data-id') || b.value || b.id);
-          break;
-        }
+    /* ---------- Locate correct iframe ---------- */
+    function getInteractionFrame() {
+      const analyticsFrame = document.querySelector(
+        'iframe[src*="analytics-ui"][src*="/interactions"]'
+      );
+      if (analyticsFrame && analyticsFrame.contentDocument) return analyticsFrame.contentDocument;
+
+      for (const f of document.querySelectorAll('iframe')) {
+        try {
+          const d = f.contentDocument;
+          const c = d ? d.querySelectorAll('input[type="checkbox"]').length : 0;
+          if (c > 1) return d;
+        } catch {}
       }
-      return selected.filter(Boolean);
+      console.warn('⚠️ Could not locate Interactions iframe.');
+      return null;
     }
 
+    /* ---------- Extract conversation ID from row class ---------- */
+    function extractConversationId(el) {
+      if (!el) return null;
+      const row = el.closest('.dt-row.action-row');
+      if (!row) return null;
+      const classes = Array.from(row.classList);
+      const entityClass = classes.find(c => c.startsWith('entity-id-'));
+      return entityClass ? entityClass.replace('entity-id-', '') : null;
+    }
+
+    /* ---------- Detect selected checkboxes ---------- */
+    function detectSelectedInteractions() {
+      const frameDoc = getInteractionFrame();
+      if (!frameDoc) return [];
+
+      const boxes = Array.from(frameDoc.querySelectorAll('input[type="checkbox"]:checked'));
+      const ids = boxes.map(b => extractConversationId(b)).filter(Boolean);
+      return ids;
+    }
+
+    /* ---------- Verify interaction existence ---------- */
     async function verifyInteraction(id) {
-      // lightweight existence check using safeApiFetch
       const resp = await safeApiFetch(`${apiBase}/api/v2/conversations/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (resp.status === 404) return { exists: false };
       if (!resp.ok) return { exists: false, error: await resp.text() };
       const data = await resp.json();
-      return { exists: true, name: data.participants?.[0]?.name || id, type: data.mediaType || 'unknown' };
+      return {
+        exists: true,
+        conversationId: data.id,
+        name: data.participants?.[0]?.name || 'Unknown',
+        type: data.mediaType || 'unknown'
+      };
     }
 
-    scanBtn.onclick = async () => {
+    /* ---------- Disconnect API call ---------- */
+    async function disconnectInteraction(id) {
+      const url = `${apiBase}/api/v2/conversations/${id}`;
+      return await safeApiFetch(url, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    }
+
+    /* ---------- Main action ---------- */
+    disconnectBtn.onclick = async () => {
       const ids = detectSelectedInteractions();
       const isDry = dryRunBox.checked;
 
@@ -78,50 +110,76 @@
         return;
       }
 
-      const confirmMsg = `Found ${ids.length} selected interactions.\n` +
-        (isDry ? `Proceed with a Dry Run verification?` : `Proceed to verify their existence via API?`);
+      // ✅ double confirmation
+      const confirmMsg = isDry
+        ? `Preview disconnecting ${ids.length} interactions?`
+        : `⚠️ Permanently disconnect ${ids.length} interactions?\nThis action cannot be undone.`;
       if (!confirm(confirmMsg)) return;
 
-      scanResults.innerHTML = `Verifying ${ids.length} selected interactions...`;
+      // Optional: extra confirmation for >10 items
+      if (!isDry && ids.length > 10) {
+        const pin = prompt('Type 1234 to confirm disconnect of multiple interactions:');
+        if (pin !== '1234') {
+          alert('Operation cancelled.');
+          return;
+        }
+      }
 
-      const logger = createLogger(orgInfo, 'interactionDisconnectorNative', isDry ? 'dryrun' : 'verify');
-      let ok = 0, fail = 0, done = 0, total = ids.length;
+      const logger = createLogger(orgInfo, 'interactionDisconnectorNative', isDry ? 'dryrun' : 'live');
+      let ok = 0, fail = 0, skip = 0, done = 0, total = ids.length;
       bar.update(done, total);
+      scanResults.innerHTML = `${isDry ? 'Previewing' : 'Disconnecting'} ${total} interactions…`;
 
       for (const id of ids) {
         try {
           const verify = await verifyInteraction(id);
-          if (verify.exists) {
-            ok++;
-            const msg = `✅ Interaction verified: ${verify.name} (${id}) [${verify.type}]`;
+          if (!verify.exists) {
+            skip++;
+            const msg = `⚠️ Interaction ${id} not found. Skipping.`;
             logger.add(msg);
-            logger.addCSV(verify.name, id, 'VERIFIED', verify.type);
-            console.log(msg);
+            logger.addCSV(id, id, 'SKIPPED', 'Not Found');
+            continue;
+          }
+
+          if (isDry) {
+            const msg = `🧪 Would disconnect ${verify.name} (${verify.conversationId}) [${verify.type}]`;
+            logger.add(msg);
+            logger.addCSV(verify.name, verify.conversationId, 'DRY_RUN', verify.type);
           } else {
-            fail++;
-            const msg = `⚠️ Interaction not found or invalid: ${id}`;
-            logger.add(msg);
-            logger.addCSV(id, id, 'MISSING', verify.error || 'Not Found');
-            console.warn(msg);
+            const resp = await disconnectInteraction(verify.conversationId);
+            if (resp.ok) {
+              ok++;
+              const msg = `✅ Disconnected ${verify.name} (${verify.conversationId}) [${verify.type}]`;
+              logger.add(msg);
+              logger.addCSV(verify.name, verify.conversationId, 'SUCCESS', 'Disconnected');
+            } else {
+              fail++;
+              const err = await resp.text();
+              const msg = `❌ Failed to disconnect ${verify.conversationId}: ${err}`;
+              logger.add(msg);
+              logger.addCSV(verify.name, verify.conversationId, 'FAIL', err);
+              console.error(msg);
+            }
           }
         } catch (e) {
           fail++;
-          const msg = `❌ Error verifying ${id}: ${e.message}`;
+          const msg = `❌ Error disconnecting ${id}: ${e.message}`;
           logger.add(msg);
-          logger.addCSV(id, id, 'ERROR', e.message);
+          logger.addCSV(id, id, 'FAIL', e.message);
           console.error(msg);
         }
         done++;
         bar.update(done, total);
-        await sleep(200);
+        await sleep(300);
       }
 
-      logger.add(`Summary: verified=${ok}, missing=${fail}`);
+      logger.add(`Summary: success=${ok}, fail=${fail}, skipped=${skip}`);
       logger.save();
 
       scanResults.innerHTML = `
-        <span style="color:#0f0;">✅ Verified: ${ok}</span> &nbsp; 
-        <span style="color:#ff6666;">⚠️ Missing/Error: ${fail}</span>
+        <span style="color:#0f0;">✅ Success: ${ok}</span> &nbsp;
+        <span style="color:#ff6666;">❌ Failed: ${fail}</span> &nbsp;
+        <span style="color:#ffcc00;">⚠️ Skipped: ${skip}</span>
         <br><small>Logs downloaded automatically.</small>
       `;
 
@@ -132,8 +190,8 @@
   }
 
   registerGcTool({
-    name: "Interaction Disconnector (Native)",
-    version: "5.0",
+    name: 'Interaction Disconnector (Native)',
+    version: '6.0',
     run
   });
 })();
