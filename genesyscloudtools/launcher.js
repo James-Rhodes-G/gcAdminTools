@@ -15,7 +15,8 @@
       await window.GCHelpers.waitForBody();
     }
 
-    const tokenObj = localStorage.getItem('gcucc-ui-auth-token');
+    //const tokenObj = localStorage.getItem('gcucc-ui-auth-token');
+    const tokenObj = localStorage.getItem('volt-ui-auth-token');
     if (!tokenObj) {
       console.warn("🔒 No Genesys Cloud auth token found. Launcher will not render.");
       return;
