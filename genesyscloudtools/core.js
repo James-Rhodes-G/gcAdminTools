@@ -22,7 +22,7 @@
 // Toggle between environments
 // true  = load everything from local Apache (for development)
 // false = load from GitHub (for production)
-const DEV_MODE = true;   //flip this to true when testing locally
+const DEV_MODE = false;   //flip this to true when testing locally
 
 // Local base path (served by Apache on macOS)
 const LOCAL_BASE = "http://localhost/~jarhodes/TamperMonkey/genesyscloudtools";
