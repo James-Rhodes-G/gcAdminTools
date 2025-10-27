@@ -60,7 +60,7 @@ jobs:
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git add genesyscloudtools/manifest.json
+          git add --force genesyscloudtools/manifest.json
           if git diff --cached --quiet; then
             echo "ℹ️ No changes to commit. Skipping push."
           else
