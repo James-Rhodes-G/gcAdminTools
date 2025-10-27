@@ -16,7 +16,8 @@
     }
 
     //const tokenObj = localStorage.getItem('gcucc-ui-auth-token');
-    const tokenObj = localStorage.getItem('volt-ui-auth-token');
+    //const tokenObj = localStorage.getItem('volt-ui-auth-token');
+    const tokenObj = localStorage.getItem('pc_auth');
     if (!tokenObj) {
       console.warn("🔒 No Genesys Cloud auth token found. Launcher will not render.");
       return;
@@ -51,7 +52,8 @@
     }
 
     try {
-      const token = JSON.parse(tokenObj).token;
+      //const token = JSON.parse(tokenObj).token;
+      const token = JSON.parse(tokenObj).authenticated.access_token;
       const region = window.location.hostname.match(/(?:apps|login|mypurecloud|apps2|apps3)\.(.+)$/)[1];
       const apiBase = `https://api.${region}`;
       const orgResp = await fetch(`${apiBase}/api/v2/organizations/me`, {
