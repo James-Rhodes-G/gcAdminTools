@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         Genesys Cloud Admin Core (Git Loader + Registry + SPA Safe + Hotkey)
 // @namespace    local.gc.tools
-// @version      3.6
+// @version      3.6.1
 // @description  Loads Genesys Cloud Admin tools dynamically from GitHub with registry, cache, SPA navigation recovery, and Alt+L launcher hotkey
 // @grant        none
 // @run-at       document-end
 // @match        https://*.mypurecloud.com/*
 // @match        https://*.pure.cloud/*
 // @match        https://*.us-gov-pure.cloud/*
-// @Author       James Rhodes
+// @author       James Rhodes
 // ==/UserScript==
 
 
@@ -23,6 +23,7 @@
 // true  = load everything from local Apache (for development)
 // false = load from GitHub (for production)
 const DEV_MODE = false;   //flip this to true when testing locally
+
 
 // Local base path (served by Apache on macOS)
 const LOCAL_BASE = "http://localhost/~jarhodes/TamperMonkey/genesyscloudtools";
