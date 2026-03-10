@@ -29,6 +29,29 @@
     URL.revokeObjectURL(a.href);
   };
 
+  function ensureSharedFormStyles() {
+    if (document.getElementById('gc-tools-shared-form-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'gc-tools-shared-form-styles';
+    style.textContent = `
+      #src, #tgt {
+        width: 100%;
+        margin-bottom: 10px;
+        background: #2c2c2c;
+        color: #fff;
+        border: 1px solid #555;
+        border-radius: 5px;
+        padding: 6px;
+      }
+
+      #src option, #tgt option {
+        background: #2c2c2c;
+        color: #fff;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
   /* ─────────── Wait for a Visible Body ─────────── */
   async function waitForBody(maxWait = 15000) {
     const start = performance.now();
@@ -42,6 +65,7 @@
 
   /* ─────────── Unified Panel UI (with minimize/dock) ─────────── */
   function createPanel(title, width = 360, startMinimized = false) {
+    ensureSharedFormStyles();
     const p = document.createElement('div');
     Object.assign(p.style, {
       position: 'fixed',

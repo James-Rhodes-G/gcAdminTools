@@ -13,7 +13,7 @@
     await window.GCHelpers.waitForBody();
     const { createPanel, createProgress, createLogger, sleep, addReturnButton, safeApiFetch } = window.GCHelpers;
 
-    const content = createPanel('📞 Interaction Disconnector (Disconnect Enabled)');
+    const content = createPanel('📞 Interaction Disconnector');
 
     content.innerHTML = `
       <p style="font-size:13px;color:#ddd;margin-bottom:6px;">
@@ -190,7 +190,7 @@
   }
 
   registerGcTool({
-    name: 'Interaction Disconnector (Native)',
+    name: 'Interaction Disconnector',
     version: '6.0',
     run
   });
