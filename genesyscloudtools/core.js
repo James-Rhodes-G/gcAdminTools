@@ -7,6 +7,7 @@
 // @run-at       document-end
 // @match        https://*.mypurecloud.com/*
 // @match        https://*.pure.cloud/*
+// @match        https://*.mypurecloud.*/*
 // @match        https://*.us-gov-pure.cloud/*
 // @author       James Rhodes
 // ==/UserScript==
