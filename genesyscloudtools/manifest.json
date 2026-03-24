@@ -8,6 +8,8 @@
 ,
     "https://raw.githubusercontent.com/James-Rhodes-G/gcAdminTools/main/genesyscloudtools/modules/interactionDisconnector.js"
 ,
+    "https://raw.githubusercontent.com/James-Rhodes-G/gcAdminTools/main/genesyscloudtools/modules/phoneBulkMoverFromList.js"
+,
     "https://raw.githubusercontent.com/James-Rhodes-G/gcAdminTools/main/genesyscloudtools/modules/phoneRemover.js"
 ,
     "https://raw.githubusercontent.com/James-Rhodes-G/gcAdminTools/main/genesyscloudtools/modules/phoneSiteMigrator.js"
