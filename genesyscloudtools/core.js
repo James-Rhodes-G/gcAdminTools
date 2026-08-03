@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Genesys Cloud Admin Core (Git Loader + Registry + SPA Safe + Hotkey)
 // @namespace    local.gc.tools
-// @version      3.6.1
+// @version      3.6.2
 // @description  Loads Genesys Cloud Admin tools dynamically from GitHub with registry, cache, SPA navigation recovery, and Alt+L launcher hotkey
 // @grant        none
 // @run-at       document-end
