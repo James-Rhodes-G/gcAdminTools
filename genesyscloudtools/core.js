@@ -6,9 +6,13 @@
 // @grant        none
 // @run-at       document-end
 // @match        https://*.mypurecloud.com/*
+// @exclude      https://login.mypurecloud.com/*
 // @match        https://*.pure.cloud/*
+// @exclude      https://login.*.pure.cloud/*
 // @match        https://*.mypurecloud.*/*
+// @exclude      https://login.mypurecloud.*/*
 // @match        https://*.us-gov-pure.cloud/*
+// @exclude      https://login.us-gov-pure.cloud/*
 // @author       James Rhodes
 // ==/UserScript==
 
